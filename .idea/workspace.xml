@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="475af5b8-9937-48a8-9e16-8c2c1bbfba2a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/src/resource/exacutly_one.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/resource/exacutly_two.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ForJob/questionFlink.md" beforeDir="false" afterPath="$PROJECT_DIR$/ForJob/questionFlink.md" afterDir="false" />
     </list>
@@ -39,8 +41,8 @@
         <entry file="file://$PROJECT_DIR$/ForJob/questionFlink.md">
           <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
             <state split_layout="SPLIT">
-              <first_editor relative-caret-position="180">
-                <caret line="191" column="26" lean-forward="true" selection-start-line="191" selection-start-column="26" selection-end-line="191" selection-end-column="26" />
+              <first_editor relative-caret-position="219">
+                <caret line="399" column="49" selection-start-line="399" selection-start-column="49" selection-end-line="399" selection-end-column="49" />
               </first_editor>
               <second_editor />
             </state>
@@ -351,7 +353,14 @@
       <option name="project" value="LOCAL" />
       <updated>1594276928080</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="add question for flink">
+      <created>1594277060057</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1594277060057</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -362,7 +371,7 @@
       <window_info id="Designer" />
       <window_info id="UI Designer" />
       <window_info id="Learn" />
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.13830392" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.042117245" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Version Control" weight="0.32962137" />
       <window_info anchor="bottom" id="SOQL Query" />
@@ -442,8 +451,8 @@
     <entry file="file://$PROJECT_DIR$/ForJob/questionFlink.md">
       <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
         <state split_layout="SPLIT">
-          <first_editor relative-caret-position="180">
-            <caret line="191" column="26" lean-forward="true" selection-start-line="191" selection-start-column="26" selection-end-line="191" selection-end-column="26" />
+          <first_editor relative-caret-position="219">
+            <caret line="399" column="49" selection-start-line="399" selection-start-column="49" selection-end-line="399" selection-end-column="49" />
           </first_editor>
           <second_editor />
         </state>

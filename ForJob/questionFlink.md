@@ -180,14 +180,259 @@ env.execute()
 Watermark 是 Apache Flink 
 - 为了处理 EventTime 窗口计算提出的一种机制, 
 - 本质上是一种时间戳。
-- 一般来讲Watermark经常和Window一起被用来处理乱序事件。    
+- 一般来讲Watermark经常和Window一起被用来处理乱序事件。
+- watermark用于高速flink框架，不会有比这个事件更早的数据到来，可以关闭窗口了      
 ```
 简单理解下： 当我们基于eventTime时，如果数据产生时间比较早，但是由于网络或者其他原因
 到达flink处理比较晚，此时由于按照eventTime时间格式 作为window划分
 - 开着的window判定这个event数据的eventtime不在window范围内，不采集
 - 旧的window已经关闭了，会造成这种延迟数据的丢失；
 ```
+- 举例说明  
+背景：生成时间为 13  13 16 依次有序到达      
+one: processTime window 理想情况， 准时到达flink端        
+![dd](/src/resource/watermarker_one.png)    
+two: processTime 当event延迟到达：有一个13的数据延迟了6秒19才到       
+![dd](/src/resource/watermarker_two.png)        
+此时，根据processTime的Window 会将其中一个13分到 本不属于他的窗口     
+three: eventTime window 当延迟到达时，由于13的数据在19时刻到来时窗口[10-15]已经关了，所以没有进入第一个窗口     
+![dd](/src/resource/watermarker_three.png)      
+four: eventTime window + watermark 使用watermark表示在这个时间戳之前的数据已经都到了，watermark = nowtimestamp - 5 ,会给于 window 5秒的等待缓冲       
+![dd](/src/resource/watermarker_three.png)          
+13的数据虽然在19秒到达，小于第一个窗口max_time + delay(5) 因此存放到第一个window中
 
-one: processTime window 理想情况    
-    生成时间为 13  13 16 依次有序到达
-![dd](/src/resource/watermarker_one.png)
+- 使用watermark的方式    
+（1）配置AllowedLateness    
+（2）对数据流设置 自定义的TimestampAndWatermark
+```
+senv.socketTextStream("localhost", 9999)
+                .assignTimestampsAndWatermarks(new TimestampExtractor)
+```
+```                
+class TimestampExtractor extends AssignerWithPeriodicWatermarks[String] with Serializable {
+  override def extractTimestamp(e: String, prevElementTimestamp: Long) = {
+    e.split(",")(1).toLong 
+  }
+  override def getCurrentWatermark(): Watermark = { 
+      new Watermark(System.currentTimeMillis - 5000)
+  }
+}
+```
+- 注意    
+（1）窗口中的消息不会根据事件时间进行排序
+
+
+#### (19) Flink Table & SQL 熟悉吗？TableEnvironment这个类有什么作用
+- 在内部catalog中注册表
+- 注册外部catalog
+- 执行SQL查询
+- 注册用户定义（标量，表或聚合）函数
+- 将DataStream或DataSet转换为表
+- 持有对ExecutionEnvironment或StreamExecutionEnvironment的引用
+
+#### (20) Flink SQL的实现原理是什么？ 是如何实现 SQL 解析的呢？
+Flink 的SQL解析是基于Apache Calcite这个开源框架。    
+[to do ](to do)
+
+### 2 部分内容进阶篇
+#### 2.1 Flink是如何支持批流一体的？
+Flink的开发者认为批处理是流处理的一种特殊情况。
+批处理是有限的流处理。Flink 使用一个流处理引擎支持了DataSet API 和 DataStream API。
+
+#### 2.2 Flink是如何做到高效的数据交换的？ 
+在一个Flink Job中，数据需要在不同的task中进行交换，整个数据交换是有 TaskManager 负责的，
+- TaskManager 的网络组件首先从缓冲buffer中收集records，然后再发送。
+- Records 并不是一个一个被发送的，而是积累一个批次再发送，batch 技术可以更加高效的利用网络资源。
+         
+#### 2.3 Flink是如何做容错的？
+ Flink 实现容错主要靠强大的CheckPoint机制和State机制。
+ - Checkpoint 负责定时制作分布式快照、对程序中的状态进行备份；
+ - State 用来存储计算过程中的中间状态。
+ 
+ #### 2.4 Flink 分布式快照的原理是什么？
+  (1) Flink的分布式快照是根据Chandy-Lamport算法量身定做的     
+  Chandy-Lamport 算法具体的工作流程
+  - Initiating a snapshot: 也就是开始创建 snapshot，可以由系统中的任意一个进程发起
+  - Propagating a snapshot: 系统中其他进程开始逐个创建 snapshot 的过程
+  - Terminating a snapshot: 算法结束条件
+  (2) flink checkpoint 执行流程
+  核心思想是在 input source 端插入 barrier，控制 barrier 的同步来实现 snapshot 的备份和 exactly-once 语义。  
+  checkpoint管理器，CheckpointCoordinator 由JobManager为创建，全权负责本job的快照制作。
+  - CheckpointCoordinator周期性的向该流应用的所有source算子发送barrier。
+  - 某个source算子收到一个barrier时，便暂停数据处理过程，然后将自己的当前状态制作成快照，并保存到指定的持久化存储中，最后向CheckpointCoordinator报告自己快照制作情况，同时向自身所有下游算子广播该barrier，恢复数据处理
+  - 下游算子收到barrier之后，会暂停自己的数据处理过程，然后将自身的相关状态制作成快照，并保存到指定的持久化存储中，最后向CheckpointCoordinator报告自身快照情况[备份数据的地址（state handle）]，同时向自身所有下游算子广播该barrier，恢复数据处理
+  - 每个算子按照步骤3不断制作快照并向下游广播，直到最后barrier传递到sink算子，快照制作完成
+  - 当CheckpointCoordinator收到所有算子的报告之后，认为该周期的快照制作成功, 整个 StateHandle 封装成 completed CheckPoint Meta,写入到hdfs; 否则，如果在规定的时间内没有收到所有算子的报告，则认为本周期快照制作失败;     
+  (3) checkpoint中保存的是什么信息(准确滴将是 snapshot)
+  根据不同算子的snapshotState方法，存放ListState    
+  (4) barrier 对齐
+  一个Operator的流入端有多个入口时，当收到其中一个入口的barrier n，需要暂停来自任何流的数据记录，直到它从其他所有输入接收到barrier n为止。否则，它会混合属于快照n的记录和属于快照n + 1的记录；    
+  接收到barrier n的流暂时被搁置。从这些流接收的记录不会被处理，而是放入输入缓冲区。     
+  ***这里就是barrier对齐，等到所有barrier都来了之后，才进行checkpoint，然后下发barrier，继续处理数据    
+  - barrier不对齐  
+    barrier不对齐就是指当还有其他流的barrier还没到达时，为了不影响性能，也不用理会，直接处理barrier之后的数据。等到所有流的barrier的都到达后，就可以对该Operator做CheckPoint了
+  - barrier对齐和不对齐的影响和区别
+    ```
+    * Exactly Once时必须barrier对齐，如果barrier不对齐就变成了At Least Once
+    * barrier不对齐，可能造成从checkpoint恢复时，造成重复消费，因为恢复时，operator存放的状态可能是处理过上一级barrier之后的状态，包含一部分冗余的数据
+    ```
+  - barrier对齐出现在什么时候
+  ```
+  ** 首先设置了Flink的CheckPoint语义是：Exactly Once
+  ** Operator实例必须有多个输入流才会出现barrier对齐
+  ```
+ #### 2.5 Flink 是如何保证Exactly-once语义的？       
+  (1) 概述 flink的exactly-once我们可以细分为 
+  - flink内部的exactly once : 如上面讲到的barrier 对齐实现消费exactly once
+  - 端到端的exactly once    
+ 
+  (2) Flink通过实现两阶段提交和状态保存来实现端到端的一致性语义。分为以下几个步骤：
+  - 开始事务（beginTransaction）创建一个临时文件夹，来写把数据写入到这个文件夹里面
+  - 预提交（preCommit）将内存中缓存的数据写入文件并关闭
+  - 正式提交（commit）将之前写完的临时文件放入目标目录下。这代表着最终的数据会有一些延迟
+  - 丢弃（abort）丢弃临时文件
+  若失败发生在预提交成功后，正式提交前。可以根据状态来提交预提交的数据，也可删除预提交的数据。
+  这四个步骤，抽象成TwoPhaseCommitSinkFunction类，而目前kafka的高版本的sink是继承了这个类的，通过开启exactly once就能够实现事务保证exactlyonce
+  ```
+  端到端的 exactly once 举例 kafka source --> window --> kafka sink
+  作业必须在一次事务中将缓存的数据全部写入kafka。一次commit会提交两个checkpoint之间所有的数据。
+  
+  A pre-commit阶段起始于一次快照的开始，即master节点将checkpoint的barrier注入source端，barrier随着数据向下流动直到sink端。
+    barrier每到一个算子，都会触发算子做本地快照，当状态涉及到外部系统时，需要外部系统支持事务操作来配合flink实现2PC协议
+    【2pc: 两阶段提交，预提交 正式提交 当预提交发生问题时，取消这次行为】
+  B 当所有的算子都做完了本地快照并且回复到master节点时，pre-commit阶段才算结束。这个时候，checkpoint已经成功，并且包含了外部系统的状态。如果作业失败，可以进行恢复。
+  C 2PC的commit阶段：source节点和window节点没有外部状态，所以这时它们不需要做任何操作。而对于sink节点，需要commit这次事务，将数据写到外部系统。 
+  ```   
+  ![2PC提交pre-commit](/src/resource/exacutly_one.png)    
+  ![2PC提交commit](/src/resource/exacutly_two.png)
+    
+  #### 2.6 flink的内存管理
+  
+  #####  (1) 概述 
+ - Flink 并不是将大量对象存在堆上，而是将对象都序列化到一个预分配的内存块上(MemorySegment)。它代表了一段固定长度的内存（默认大小为 32KB），也是 Flink 中最小的内存分配单元  java.nio.ByteBuffer 可分配在堆内new byte[] 和堆外DirectByteBuffer        
+ - 此外，Flink大量的使用了堆外内存。如果需要处理的数据超出了内存限制，则会将部分数据存储到硬盘上。
+ - Flink 为了直接操作二进制数据实现了自己的序列化框架      
+  
+  ##### (2) 理论上TaskManger的内存管理分为三部分：
+  
+  - Network Buffers：这个是在TaskManager启动的时候分配的，这是一组用于缓存网络数据的内存，每个块是32K，默认分配2048个，可以通过“taskmanager.network.numberOfBuffers”修改
+  - Memory Manage pool：大量的Memory Segment块，由MemoryManager管理，用于运行时的算法（Sort/Join/Shuffle等）向这个内存池申请 MemorySegment，将序列化后的数据存于其中，使用完后释放回内存池。池子占了堆内存（taskmanager进程分配的内存）的 70% 的大小
+  - User Code，这部分的内存是留给用户代码以及 TaskManager 的数据结构使用的。因为这些数据结构一般都很小，所以基本上这些内存都是给用户代码使用的。从GC的角度来看，可以把这里看成的新生代，也就是说这里主要都是由用户代码生成的短期对象。       
+  Flink 采用类似 DBMS 的 sort 和 join 算法，直接操作二进制数据，从而使序列化/反序列化带来的开销达到最小；  
+  ##### (3) Flink 积极的内存管理以及直接操作二进制数据优点
+  - 减少GC压力。显而易见，因为所有常驻型数据都以二进制的形式存在 Flink 的MemoryManager中，这些MemorySegment一直呆在老年代而不会被GC回收(甚至可以放在堆外，进一步降低JVM GC耗费)    
+  - 避免了OOM。所有的运行时数据结构和算法只能通过内存池申请内存，保证了其使用的内存大小是固定的 不会因为运行时数据结构和算法而发生OOM； 在内存吃紧的情况下，算法（sort/join等）会高效地将一大批内存块写到磁盘，之后再读回来。因此，OutOfMemoryErrors可以有效地被避免
+  - 节省内存空间。Java 对象在存储上有很多额外的消耗（如上一节所谈）。如果只存储实际数据的二进制内容
+  - 高效的二进制操作 & 缓存友好的计算。二进制数据以定义好的格式存储，可以高效地比较与操作  
+  
+  ##### (4) 为什么还要引入堆外内存       
+   - 启动超大内存（上百GB）的JVM需要很长时间，GC停留时间也会很长（分钟级）。使用堆外内存的话，可以极大地减小堆内存
+   - 高效的 IO 操作。堆外内存在写磁盘或网络传输时是 zero-copy，而堆内存的话，至少需要 copy 一次。
+   - 堆外内存是进程间共享的。也就是说，即使JVM进程崩溃也不会丢失数据。这可以用来做故障恢复（Flink暂时没有利用起这个，不过未来很可能会去做）。
+   ##### (5) flink怎么使用堆外内存的
+   Flink 将原来的 MemorySegment 变成了抽象类，并生成了两个子类。
+   - HeapMemorySegment 和前者是用来分配堆内存的，     
+      代码中所有的短生命周期和长生命周期的MemorySegment都实例化其中一个子类，另一个子类根本没有实例化过（使用工厂模式来控制）。那么运行一段时间后，JIT 会意识到所有调用的方法都是确定的，然后会做优化。
+   - HybridMemorySegment。后者是用来分配堆外内存和堆内存的    
+   Flink 优雅地实现了一份代码能同时操作堆和堆外内存。这主要归功于 sun.misc.Unsafe提供的一系列方法，如getLong方法
+      ```
+      sun.misc.Unsafe.getLong(Object reference, long offset)
+      ** 如果reference不为空，则会取该对象的地址，加上后面的offset，从相对地址处取出8字节并得到 long。这对应了堆内存的场景。
+      ** 如果reference为空，则offset就是要操作的绝对地址，从该地址处取出数据。这对应了堆外内存的场景。
+      ```
+   ##### (6) 内存划分
+   在设置完taskManager内存之后相当于向yarn申请这么大内存的container，然后flink内部的内存大部分是由flink框架管理，在启动container之前就会 预先计算各个内存块的大小。       
+   ```
+
+   // 默认值0.25f
+   final float memoryCutoffRatio = config.getFloat(ResourceManagerOptions.CONTAINERIZED_HEAP_CUTOFF_RATIO);
+   // 最少预留大小默认600MB
+   final int minCutoff = config.getInteger(ResourceManagerOptions.CONTAINERIZED_HEAP_CUTOFF_MIN);
+             
+   // 先减去一块内存预留给jvm
+   long cutoff = (long) (containerMemoryMB * memoryCutoffRatio);
+   if (cutoff < minCutoff) {
+       cutoff = minCutoff;
+   }
+   final long javaMemorySizeMB = containerMemoryMB - cutoff;
+   
+   // (2) split the remaining Java memory between heap and off-heap
+   final long heapSizeMB = TaskManagerServices.calculateHeapSizeMB(javaMemorySizeMB, config);
+   // use the cut-off memory for off-heap (that was its intention)
+   // 计算得到堆外内存后，总内存减去得到堆内的大小
+   final long offHeapSize = javaMemorySizeMB == heapSizeMB ? -1L : containerMemoryMB - heapSizeMB;
+   ```
+   ```
+   // 默认线上是开启堆外内存的，为了数据交换的过程只使用堆外内存，gc友好
+   if (useOffHeap) {
+       // subtract the Java memory used for network buffers
+       final long networkBufMB = calculateNetworkBufferMemory(totalJavaMemorySize, config) >> 20; // bytes to megabytes
+       final long remainingJavaMemorySizeMB = totalJavaMemorySizeMB - networkBufMB;
+   
+       long offHeapSize = config.getLong(TaskManagerOptions.MANAGED_MEMORY_SIZE);
+   
+       if (offHeapSize <= 0) {
+           // calculate off-heap section via fraction
+           // 将划去networkBuffer大小*一个堆外的系数（默认是0.7）得到其他的堆外内存
+           double fraction = config.getFloat(TaskManagerOptions.MANAGED_MEMORY_FRACTION);
+           offHeapSize = (long) (fraction * remainingJavaMemorySizeMB);
+       }
+   
+       TaskManagerServicesConfiguration
+           .checkConfigParameter(offHeapSize < remainingJavaMemorySizeMB, offHeapSize,
+               TaskManagerOptions.MANAGED_MEMORY_SIZE.key(),
+               "Managed memory size too large for " + networkBufMB +
+                   " MB network buffer memory and a total of " + totalJavaMemorySizeMB +
+                   " MB JVM memory");
+   
+       heapSizeMB = remainingJavaMemorySizeMB - offHeapSize;
+   } else {
+       heapSizeMB = totalJavaMemorySizeMB;
+   }
+   ```   
+   
+   - 先预留出一块【总的 25% 】（最少60M），得到剩下可分配的JVM内存 javaMemorySizeMB = containerMemoryMB - cutoff;
+   - 计算TaskManagerServices.calculateHeapSizeMB(javaMemorySizeMB, config) 得到堆内存  
+    计算规则：
+        默认开启了堆外内存： 那么将 [ jvmMemory - networkBuffer(32k * 2048=64M) ] * 70% 视为堆外 memoryManager管理（预设定，实际上更大些），
+                                    [ jvmMemory - networkBuffer(32k * 2048=64M) ] * 70% 视为堆内  真正的heapMemory
+   - 堆内存以下的为为堆外 containerMemoryMB - heapSizeMB  
+   所以实际上，堆外： networkBuffer   预留的25%   + 0.75*0.7 差不多这些
+               堆内： （总的-25%-networkbuffer）*30%  21%左右
+  
+  
+  #### 2.7 flink的序列化
+  Java本身自带的序列化和反序列化的功能，但是辅助信息占用空间比较大，在序列化对象时记录了过多的类信息
+  Apache Flink摒弃了Java原生的序列化方法，以独特的方式处理数据类型和序列化，包含自己的类型描述符（TypeInformatio），泛型类型提取和类型序列化框架（TypeSerializer）
+  ##### (1) 定制序列化工具的优点
+  - 由于数据集对象的类型固定，对于数据集可以只保存一份对象Schema信息，节省大量的存储空间
+  - 对于固定大小的类型，可通过固定的偏移位置存取，可以直接通过偏移量，只是反序列化特定的对象成员变量，不需要反序列化整个对象
+  
+  
+  ##### (2)类型信息由 TypeInformation  支持这些类型信息的序列化类
+  - BasicTypeInfo: 任意Java 基本类型（装箱的）或 String 类型。
+  - BasicArrayTypeInfo: 任意Java基本类型数组（装箱的）或 String 数组。
+  - WritableTypeInfo: 任意 Hadoop Writable 接口的实现类。
+  - TupleTypeInfo: 任意的 Flink Tuple 类型(支持Tuple1 to Tuple25)。Flink tuples 是固定长度固定类型的Java Tuple实现。
+  - CaseClassTypeInfo: 任意的 Scala CaseClass(包括 Scala tuples)。
+  - PojoTypeInfo: 任意的 POJO (Java or Scala)，例如，Java对象的所有成员变量，要么是 public 修饰符定义，要么有 getter/setter 方法。
+  - GenericTypeInfo: 任意无法匹配之前几种类型的类。
+  
+  每个TypeInformation中，都包含了serializer，类型会自动通过serializer进行序列化，然后用Java Unsafe接口写入MemorySegments
+  对于可以用作key的数据类型，Flink还同时自动生成TypeComparator
+  序列化和比较时会委托给对应的serializers和comparators     
+  ##### (3) Flink 如何直接操作二进制数据
+    是将序列化数据本身和 指向序列化数据 的地址 分开存放的，这样，不用移动大量序列化对象
+    以sort为例：
+  - 首先，Flink 会从 MemoryManager 中申请一批 MemorySegment，我们把这批 MemorySegment 称作 sort buffer，用来存放排序的数据。
+    分为两块 一个区域是用来存放所有对象完整的二进制数据。另一个区域用来存放指向完整二进制数据的指针以及定长的序列化后的key（key+pointer）
+  - 排序的关键是比大小和交换。Flink 中，会先用 key 比大小，这样就可以直接用二进制的key比较而不需要反序列化出整个对象。因为key是定长的，所以如果key相同（或者没有提供二进制key），那就必须将真实的二进制数据反序列化出来，然后再做比较。
+  - 之后，只需要交换key+pointer就可以达到排序的效果，真实的数据不用移动
+  - 访问排序后的数据，可以沿着排好序的key+pointer区域顺序访问，通过pointer找到对应的真实数据，并写到内存或外部      
+  
+  
+  
+  #### 
+    
+    
+  
