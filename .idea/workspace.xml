@@ -39,8 +39,8 @@
         <entry file="file://$PROJECT_DIR$/ForJob/questionFlink.md">
           <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
             <state split_layout="SPLIT">
-              <first_editor relative-caret-position="155">
-                <caret line="137" column="8" lean-forward="true" selection-start-line="137" selection-start-column="8" selection-end-line="137" selection-end-column="8" />
+              <first_editor relative-caret-position="180">
+                <caret line="191" column="26" lean-forward="true" selection-start-line="191" selection-start-column="26" selection-end-line="191" selection-end-column="26" />
               </first_editor>
               <second_editor />
             </state>
@@ -135,6 +135,17 @@
             <path>
               <item name="xjq" type="b2602c69:ProjectViewProjectNode" />
               <item name="xjq" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="xjq" type="b2602c69:ProjectViewProjectNode" />
+              <item name="xjq" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="resource" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="xjq" type="b2602c69:ProjectViewProjectNode" />
+              <item name="xjq" type="462c0819:PsiDirectoryNode" />
               <item name="srcKafka" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
@@ -148,6 +159,9 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
   </component>
   <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="F:\Project\xjq\FlinkSchema\xjq\src\resource" />
+    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="F:\Project\xjq\FlinkSchema\xjq" />
     </key>
@@ -323,7 +337,21 @@
       <option name="project" value="LOCAL" />
       <updated>1594267399696</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="add question for flink">
+      <created>1594267470677</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1594267470677</updated>
+    </task>
+    <task id="LOCAL-00007" summary="add question for flink">
+      <created>1594276928080</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1594276928080</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -334,12 +362,12 @@
       <window_info id="Designer" />
       <window_info id="UI Designer" />
       <window_info id="Learn" />
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.13830392" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.13830392" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Version Control" weight="0.32962137" />
       <window_info anchor="bottom" id="SOQL Query" />
       <window_info anchor="bottom" id="Log Analyzer" />
-      <window_info active="true" anchor="bottom" id="Terminal" visible="true" weight="0.39703903" />
+      <window_info anchor="bottom" id="Terminal" visible="true" weight="0.39703903" />
       <window_info anchor="bottom" id="Event Log" side_tool="true" />
       <window_info anchor="bottom" id="Anonymous Apex" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -414,8 +442,8 @@
     <entry file="file://$PROJECT_DIR$/ForJob/questionFlink.md">
       <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
         <state split_layout="SPLIT">
-          <first_editor relative-caret-position="155">
-            <caret line="137" column="8" lean-forward="true" selection-start-line="137" selection-start-column="8" selection-end-line="137" selection-end-column="8" />
+          <first_editor relative-caret-position="180">
+            <caret line="191" column="26" lean-forward="true" selection-start-line="191" selection-start-column="26" selection-end-line="191" selection-end-column="26" />
           </first_editor>
           <second_editor />
         </state>

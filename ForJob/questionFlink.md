@@ -188,6 +188,6 @@ Watermark 是 Apache Flink
 - 旧的window已经关闭了，会造成这种延迟数据的丢失；
 ```
 
-one: processTime window 理想情况 
-生成时间为 13  13 16 
--[dd](/src/resource/watermarker_one.png)
+one: processTime window 理想情况    
+    生成时间为 13  13 16 依次有序到达
+![dd](/src/resource/watermarker_one.png)
