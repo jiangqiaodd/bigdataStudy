@@ -136,6 +136,58 @@ env.execute()
 ```
 
 #### (14)flink中的广播变量
-_将数据广播出去，是完整的而没有被分开_
-我们知道Flink是并行的，计算过程可能不在一个 Slot 中进行，
+
+1. 出发点：某份数据需要完整性；我们知道Flink是并行的，计算过程可能不在一个 Slot 中进行，
 那么有一种情况即：当我们需要访问同一份数据。那么Flink中的广播变量就是为了解决这种情况。
+2. 使用
+  - 初始化数据
+  
+    DataSet<Integer> toBroadcast = env.fromElements(1, 2, 3)
+  - 广播数据
+    
+    .withBroadcastSet(toBroadcast, "broadcastSetName");
+  - 获取数据
+    
+    Collection<Integer> broadcastSet = getRuntimeContext().getBroadcastVariable("broadcastSetName");
+3. 注意：
+- 广播出去的变量存在于每个节点的内存中，所以这个数据集不能太大。因为广播出去的数据，会常驻内存，除非程序执行结束
+- 广播变量在初始化广播出去以后不支持修改，这样才能保证每个节点的数据都是一致的。
+
+#### (15) window
+- Flink 支持两种划分窗口的方式，按照time和count
+- flink支持窗口的两个重要属性（size和interval）    
+    如果size=interval,那么就会形成tumbling-window(无重叠数据)  
+    如果size>interval,那么就会形成sliding-window(有重叠数据)
+- 组合形成四种窗口      
+    time-tumbling-window 无重叠数据的时间窗口，设置方式举例：timeWindow(Time.seconds(5))  
+    time-sliding-window 有重叠数据的时间窗口，设置方式举例：timeWindow(Time.seconds(5), Time.seconds(3))  
+    count-tumbling-window无重叠数据的数量窗口，设置方式举例：countWindow(5)   
+    count-sliding-window 有重叠数据的数量窗口，设置方式举例：countWindow(5,3) 
+
+#### (16) time
+- EventTime  EventTime  
+为基准来定义时间窗口将形成EventTimeWindow,要求消息本身就应该携带EventTime
+- IngestionTime     
+以 IngesingtTime 为基准来定义时间窗口将形成 IngestingTimeWindow,以 source 的systemTime为准    
+- ProcessingTime    
+以 ProcessingTime 基准来定义时间窗口将形成 ProcessingTimeWindow，以 operator 的systemTime 为准。
+
+#### (17) 说说Flink中的状态存储？
+- Flink在做计算的过程中经常需要存储中间状态，来避免数据丢失和状态恢复
+- Flink提供了三种状态存储方式：MemoryStateBackend、FsStateBackend、RocksDBStateBackend
+
+#### (18) Flink 中水印是什么概念，起到什么作用？
+Watermark 是 Apache Flink 
+- 为了处理 EventTime 窗口计算提出的一种机制, 
+- 本质上是一种时间戳。
+- 一般来讲Watermark经常和Window一起被用来处理乱序事件。    
+```
+简单理解下： 当我们基于eventTime时，如果数据产生时间比较早，但是由于网络或者其他原因
+到达flink处理比较晚，此时由于按照eventTime时间格式 作为window划分
+- 开着的window判定这个event数据的eventtime不在window范围内，不采集
+- 旧的window已经关闭了，会造成这种延迟数据的丢失；
+```
+
+one: processTime window 理想情况 
+生成时间为 13  13 16 
+-[dd](/src/resource/watermarker_one.png)
