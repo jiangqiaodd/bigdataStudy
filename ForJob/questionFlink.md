@@ -135,7 +135,7 @@ val result: DataSet[Integer] = input.map(new MyMapper())
 env.execute()
 ```
 
-## flink中的广播变量
+#### (14)flink中的广播变量
 _将数据广播出去，是完整的而没有被分开_
 我们知道Flink是并行的，计算过程可能不在一个 Slot 中进行，
 那么有一种情况即：当我们需要访问同一份数据。那么Flink中的广播变量就是为了解决这种情况。

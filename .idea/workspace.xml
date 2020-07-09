@@ -39,8 +39,8 @@
         <entry file="file://$PROJECT_DIR$/ForJob/questionFlink.md">
           <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
             <state split_layout="SPLIT">
-              <first_editor relative-caret-position="344">
-                <caret line="74" column="2" selection-start-line="74" selection-start-column="2" selection-end-line="74" selection-end-column="2" />
+              <first_editor relative-caret-position="155">
+                <caret line="137" column="8" lean-forward="true" selection-start-line="137" selection-start-column="8" selection-end-line="137" selection-end-column="8" />
               </first_editor>
               <second_editor />
             </state>
@@ -302,7 +302,28 @@
       <option name="project" value="LOCAL" />
       <updated>1594263183845</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="add question for flink">
+      <created>1594264598941</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1594264598941</updated>
+    </task>
+    <task id="LOCAL-00004" summary="add question for flink">
+      <created>1594264902412</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1594264902412</updated>
+    </task>
+    <task id="LOCAL-00005" summary="add question for flink">
+      <created>1594267399696</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1594267399696</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -393,8 +414,8 @@
     <entry file="file://$PROJECT_DIR$/ForJob/questionFlink.md">
       <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
         <state split_layout="SPLIT">
-          <first_editor relative-caret-position="344">
-            <caret line="74" column="2" selection-start-line="74" selection-start-column="2" selection-end-line="74" selection-end-column="2" />
+          <first_editor relative-caret-position="155">
+            <caret line="137" column="8" lean-forward="true" selection-start-line="137" selection-start-column="8" selection-end-line="137" selection-end-column="8" />
           </first_editor>
           <second_editor />
         </state>
