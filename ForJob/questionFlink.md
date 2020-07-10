@@ -1,13 +1,13 @@
 ## Flink question
 ### 1 核心机制以及基础
 
-#### （1）flink 基本介绍
+#### (1)flink 基本介绍
 
 - 计算框架和分布式处理引擎，对有界数据和无界数据流进行有状态处理，提供状态容错，资源管理等机制
 - 提供多层次API抽象  StatefulStreamingProcessing DataStream/DataSet DataTable Sql
 - 提供其他领域的资源库
 
-#### （2）flink && spark
+#### (2) flink && spark
 
 Flink 是标准的实时处理引擎，基于事件驱动。而 Spark Streaming 是微批（Micro-Batch）的模型
 - 架构模型
@@ -35,7 +35,7 @@ Flink 是标准的实时处理引擎，基于事件驱动。而 Spark Streaming 
  Flink 则使用两阶段提交协议来解决这个问题。
 ```
 
-#### （3）flink 组件栈
+#### (3) flink 组件栈
 
 Flink 是一个分层架构的系统，每一层所包含的组件都提供了特定的抽象
 - Deploy

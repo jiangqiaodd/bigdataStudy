@@ -2,9 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="475af5b8-9937-48a8-9e16-8c2c1bbfba2a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/resource/exacutly_one.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/resource/exacutly_two.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ForJob/questionFlink.md" beforeDir="false" afterPath="$PROJECT_DIR$/ForJob/questionFlink.md" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
@@ -41,8 +38,8 @@
         <entry file="file://$PROJECT_DIR$/ForJob/questionFlink.md">
           <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
             <state split_layout="SPLIT">
-              <first_editor relative-caret-position="219">
-                <caret line="399" column="49" selection-start-line="399" selection-start-column="49" selection-end-line="399" selection-end-column="49" />
+              <first_editor relative-caret-position="356">
+                <caret line="464" column="10" selection-start-line="464" selection-start-column="10" selection-end-line="464" selection-end-column="10" />
               </first_editor>
               <second_editor />
             </state>
@@ -109,10 +106,10 @@
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="37" />
-    <option name="y" value="88" />
-    <option name="width" value="1817" />
-    <option name="height" value="901" />
+    <option name="x" value="-7" />
+    <option name="y" value="1" />
+    <option name="width" value="1753" />
+    <option name="height" value="733" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -360,23 +357,30 @@
       <option name="project" value="LOCAL" />
       <updated>1594277060057</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="add question for flink">
+      <created>1594301977349</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1594301977349</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="37" y="88" width="1817" height="901" extended-state="0" />
+    <frame x="-7" y="1" width="1753" height="733" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Favorites" side_tool="true" />
       <window_info id="Designer" />
       <window_info id="UI Designer" />
       <window_info id="Learn" />
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.042117245" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.05375074" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Version Control" weight="0.32962137" />
       <window_info anchor="bottom" id="SOQL Query" />
       <window_info anchor="bottom" id="Log Analyzer" />
-      <window_info anchor="bottom" id="Terminal" visible="true" weight="0.39703903" />
+      <window_info anchor="bottom" id="Terminal" visible="true" weight="0.069565214" />
       <window_info anchor="bottom" id="Event Log" side_tool="true" />
       <window_info anchor="bottom" id="Anonymous Apex" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -451,8 +455,8 @@
     <entry file="file://$PROJECT_DIR$/ForJob/questionFlink.md">
       <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
         <state split_layout="SPLIT">
-          <first_editor relative-caret-position="219">
-            <caret line="399" column="49" selection-start-line="399" selection-start-column="49" selection-end-line="399" selection-end-column="49" />
+          <first_editor relative-caret-position="356">
+            <caret line="464" column="10" selection-start-line="464" selection-start-column="10" selection-end-line="464" selection-end-column="10" />
           </first_editor>
           <second_editor />
         </state>
