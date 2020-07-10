@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="475af5b8-9937-48a8-9e16-8c2c1bbfba2a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/src/resource/qinxie2.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ForJob/questionFlink.md" beforeDir="false" afterPath="$PROJECT_DIR$/ForJob/questionFlink.md" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
@@ -38,8 +40,8 @@
         <entry file="file://$PROJECT_DIR$/ForJob/questionFlink.md">
           <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
             <state split_layout="SPLIT">
-              <first_editor relative-caret-position="356">
-                <caret line="464" column="10" selection-start-line="464" selection-start-column="10" selection-end-line="464" selection-end-column="10" />
+              <first_editor relative-caret-position="256">
+                <caret line="492" column="29" lean-forward="true" selection-start-line="492" selection-start-column="29" selection-end-line="492" selection-end-column="29" />
               </first_editor>
               <second_editor />
             </state>
@@ -364,7 +366,21 @@
       <option name="project" value="LOCAL" />
       <updated>1594301977349</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="add question for flink">
+      <created>1594384367511</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1594384367511</updated>
+    </task>
+    <task id="LOCAL-00011" summary="add question for flink">
+      <created>1594384500083</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1594384500083</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -375,7 +391,7 @@
       <window_info id="Designer" />
       <window_info id="UI Designer" />
       <window_info id="Learn" />
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.05375074" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.16184288" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Version Control" weight="0.32962137" />
       <window_info anchor="bottom" id="SOQL Query" />
@@ -455,8 +471,8 @@
     <entry file="file://$PROJECT_DIR$/ForJob/questionFlink.md">
       <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
         <state split_layout="SPLIT">
-          <first_editor relative-caret-position="356">
-            <caret line="464" column="10" selection-start-line="464" selection-start-column="10" selection-end-line="464" selection-end-column="10" />
+          <first_editor relative-caret-position="256">
+            <caret line="492" column="29" lean-forward="true" selection-start-line="492" selection-start-column="29" selection-end-line="492" selection-end-column="29" />
           </first_editor>
           <second_editor />
         </state>

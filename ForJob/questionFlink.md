@@ -14,56 +14,42 @@ Flink 是标准的实时处理引擎，基于事件驱动。而 Spark Streaming 
 ```
     spark: Master Worker Driver Executor
     flink: Jobmanager taskMnager slot
-```
-
+``` 
 - 任务调度
  ```
  Spark Streaming：连续不断的生成微小的数据批次，构建有向无环图DAG，Spark Streaming 会依次创建 DStreamGraph、JobGenerator、JobSchedule
  FLink 根据用户代码构建StreamGraph --> JobGraph  --> ExcutionGraph 
  JobManager根据ExecutionGraph 对job进行调度
- ```
- 
+ ```    
 - 时间机制
  ```
  Spark Streaming 支持的时间机制有限，只支持处理时间。
  Flink 支持了流处理程序在时间上的三个定义：处理时间、事件时间、注入时间。同时也支持 watermark 机制来处理滞后数据。
- ```
- 
+ ```    
 - 容错机制
  ```
  对于 Spark Streaming 任务，我们可以设置 checkpoint，然后假如发生故障并重启，我们可以从上次 checkpoint 之处恢复，但是这个行为只能使得数据不丢失，可能会重复处理，不能做到恰一次处理语义。
  Flink 则使用两阶段提交协议来解决这个问题。
-```
-
+```     
 #### (3) flink 组件栈
-
 Flink 是一个分层架构的系统，每一层所包含的组件都提供了特定的抽象
-- Deploy
-    
+- Deploy    
     支持包括local、Standalone、Cluster(Yarn)、Cloud等多种部署模式
-- Runtime
-
+- Runtime   
     支持 Flink 计算的核心实现，比如：支持分布式 Stream 处理、JobGraph到ExecutionGraph的映射、调度等等，为上层API层提供基础服务
-- API & Libarary
-
-    API 层主要实现了面向流（Stream）处理和批（Batch）处理API，其中面向流处理对应DataStream API
-    
-    API层之上构建的满足特定应用的实现计算框架，也分别对应于面向流处理和面向批处理两类。面向流处理支持：CEP（复杂事件处理）、基于SQL-like的操作（基于Table的关系操作）
-    
-#### (4) Flink 的运行必须依赖 Hadoop组件吗？
-
-   Flink可以完全独立于Hadoop，在不依赖Hadoop组件下运行。
-   但是做为大数据的基础设施，Hadoop体系是任何大数据框架都绕不过去的。
-   Flink可以集成众多Hadooop 组件，例如Yarn、Hbase、HDFS等等。例如，
-   - Flink可以和Yarn集成做资源调度，
-   - 也可以读写HDFS，或者利用HDFS做检查点。
-
-#### (5) Flink的基础编程模型
-
-Flink程序映射到 streaming dataflows，由流（streams）和转换操作（transformation operators）组成。
-Source --> transformation --> sink
-
-#### (6) Flink集群有哪些角色？各自有什么作用？
+- API & Libarary    
+    API 层主要实现了面向流（Stream）处理和批（Batch）处理API，其中面向流处理对应DataStream API       
+    API层之上构建的满足特定应用的实现计算框架，也分别对应于面向流处理和面向批处理两类。面向流处理支持：CEP（复杂事件处理）、基于SQL-like的操作（基于Table的关系操作）  
+#### (4) Flink 的运行必须依赖 Hadoop组件吗？   
+   Flink可以完全独立于Hadoop，在不依赖Hadoop组件下运行。  
+   但是做为大数据的基础设施，Hadoop体系是任何大数据框架都绕不过去的。 
+   Flink可以集成众多Hadooop 组件，例如Yarn、Hbase、HDFS等等。例如，    
+   - Flink可以和Yarn集成做资源调度，   
+   - 也可以读写HDFS，或者利用HDFS做检查点。    
+#### (5) Flink的基础编程模型   
+Flink程序映射到 streaming dataflows，由流（streams）和转换操作（transformation operators）组成。    
+Source --> transformation --> sink      
+#### (6) Flink集群有哪些角色？各自有什么作用？      
 Flink 程序在运行时主要有 TaskManager，JobManager，Client三种角色
 - Client需要从用户提交的Flink程序配置中获取JobManager的地址，并建立到JobManager的连接，将Flink Job提交给JobManager (JobGraph)
 - JobManager扮演着集群中的管理者 接收Flink Job 部署任务执行，协调检查点，Failover 故障恢复       
@@ -455,6 +441,64 @@ Flink的开发者认为批处理是流处理的一种特殊情况。
   
 ### 3 常见面试题
 #### 3.1 Flink中的Window出现了数据倾斜，你有什么解决办法？
+window产生数据倾斜指的是数据在不同的窗口内堆积的数据量相差过多。本质上产生这种情况的原因是数据源头发送的数据量速度不同导致的。出现这种情况一般通过两种方式来解决：    
+- 在数据进入窗口前做预聚合  
+    可以在window后跟一个reduce方法，在窗口触发前采用该方法进行聚合操作（类似于MapReduce 中  map端combiner预处理思路）。如使用 flink 的 aggregate 算子 
+    ```
+    
+    ```
+- 重新设计窗口聚合的key      
+  将key进行扩展，扩展成自定义的负载数，即，将原始的key封装后新的带负载数的key，进行逻辑处理，
+  然后再对新key的计算结果进行聚合，聚合成原始逻辑的结果。 
+  ```
+  1.首先将key打散，我们加入将key转化为 key-随机数 ,保证数据散列    
+   val dataStream: DataStream[(String, Long)] = typeAndData
+           .map(x => (x._1 + "-" + scala.util.Random.nextInt(100), x._2))
+  2.对打散后的数据进行聚合统计，这时我们会得到数据比如 : (key1-12,1),(key1-13,19),(key1-1,20),(key2-123,11),(key2-123,10)    
+   val keyByAgg: DataStream[DataJast] = dataStream.keyBy(_._1)
+        .timeWindow(Time.seconds(10))
+        .aggregate(new CountAggregate())
+   
+   
+  //计算keyby后，每个Window中的数据总和
+  class CountAggregate extends AggregateFunction[(String, Long),DataJast, DataJast] {
+ 
+    override def createAccumulator(): DataJast = {
+      println("初始化")
+      DataJast(null,0)
+    }
+ 
+    override def add(value: (String, Long), accumulator: DataJast): DataJast = {
+      if(accumulator.key==null){
+        printf("第一次加载,key:%s,value:%d\n",value._1,value._2)
+        DataJast(value._1,value._2)
+      }else{
+        printf("数据累加,key:%s,value:%d\n",value._1,accumulator.count+value._2)
+        DataJast(value._1,accumulator.count + value._2)
+      }
+    }
+ 
+    override def getResult(accumulator: DataJast): DataJast = {
+      println("返回结果："+accumulator)
+      accumulator
+    }
+ 
+    override def merge(a: DataJast, b: DataJast): DataJast = {
+      DataJast(a.key,a.count+b.count)
+    }
+     
+  3.将散列key还原成我们之前传入的key，这时我们的到数据是聚合统计后的结果，不是最初的原数据
+  4.二次keyby进行结果统计，输出到addSink    
+  还原key，再次keyBy
+   val result: DataStream[DataJast] = keyByAgg.map(data => {
+         val newKey: String = data.key.substring(0, data.key.indexOf("-"))
+         println(newKey)
+         DataJast(newKey, data.count)
+       }).keyBy(_.key)
+         .process(new MyProcessFunction())
+  ```   
+  ![重新设计窗口聚合的key](/src/resource/qinxie2.png)
+  
 #### 3.2 Flink中在使用聚合函数 GroupBy、Distinct、KeyBy 等函数时出现数据热点该如何解决？
 #### 3.3 Flink的反压 以及如何处理反压
 #### 3.4 Flink Job的提交流程
