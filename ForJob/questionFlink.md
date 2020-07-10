@@ -342,8 +342,16 @@ Flink的开发者认为批处理是流处理的一种特殊情况。
       ```
    ##### (6) 内存划分
    在设置完taskManager内存之后相当于向yarn申请这么大内存的container，然后flink内部的内存大部分是由flink框架管理，在启动container之前就会 预先计算各个内存块的大小。       
+      
+   - 先预留出一块【总的 25% 】（最少60M），得到剩下可分配的JVM内存 javaMemorySizeMB = containerMemoryMB - cutoff;
+   - 计算TaskManagerServices.calculateHeapSizeMB(javaMemorySizeMB, config) 得到堆内存  
+    计算规则：
+        默认开启了堆外内存： 那么将 [ jvmMemory - networkBuffer(32k * 2048=64M) ] * 70% 视为堆外 memoryManager管理（预设定，实际上更大些），
+                                    [ jvmMemory - networkBuffer(32k * 2048=64M) ] * 70% 视为堆内  真正的heapMemory
+   - 堆内存以下的为为堆外 containerMemoryMB - heapSizeMB  
+   所以实际上，堆外： networkBuffer   预留的25%   + 0.75*0.7 差不多这些
+               堆内： （总的-25%-networkbuffer）*30%  21%左右
    ```
-
    // 默认值0.25f
    final float memoryCutoffRatio = config.getFloat(ResourceManagerOptions.CONTAINERIZED_HEAP_CUTOFF_RATIO);
    // 最少预留大小默认600MB
@@ -390,17 +398,30 @@ Flink的开发者认为批处理是流处理的一种特殊情况。
        heapSizeMB = totalJavaMemorySizeMB;
    }
    ```   
+   demo
+   ```
+   一个启动时设置TaskManager内存大小为1024MB
    
-   - 先预留出一块【总的 25% 】（最少60M），得到剩下可分配的JVM内存 javaMemorySizeMB = containerMemoryMB - cutoff;
-   - 计算TaskManagerServices.calculateHeapSizeMB(javaMemorySizeMB, config) 得到堆内存  
-    计算规则：
-        默认开启了堆外内存： 那么将 [ jvmMemory - networkBuffer(32k * 2048=64M) ] * 70% 视为堆外 memoryManager管理（预设定，实际上更大些），
-                                    [ jvmMemory - networkBuffer(32k * 2048=64M) ] * 70% 视为堆内  真正的heapMemory
-   - 堆内存以下的为为堆外 containerMemoryMB - heapSizeMB  
-   所以实际上，堆外： networkBuffer   预留的25%   + 0.75*0.7 差不多这些
-               堆内： （总的-25%-networkbuffer）*30%  21%左右
-  
-  
+   1024MB - (1024 * 0.2 < 600MB) -> 600MB  = 424MB (cutoff)
+   424MB - (424MB * 0.1 < 64MB) -> 64MB = 360MB (networkbuffer)
+   360MB * (1 - 0.7) = 108MB -> （onHeap）
+   1024MB - 108MB = 916MB （maxDirectMemory）
+   最终启动命令：
+   yarn      46218  46212  1 Jan08 ?        00:17:50
+   /home/yarn/java-current/bin/java 
+   -Xms109m -Xmx109m -XX:MaxDirectMemorySize=915m -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps 
+   -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=2 -XX:GCLogFileSize=512M 
+   -Xloggc:/data1/hadoopdata/nodemanager/logdir/application_1545981373722_0172/container_e194_1545981373722_0172_01_000005/taskmanager_gc.log 
+   -XX:+UseConcMarkSweepGC 
+   -XX:CMSInitiatingOccupancyFraction=75 
+   -XX:+UseCMSInitiatingOccupancyOnly 
+   -XX:+AlwaysPreTouch -server 
+   -XX:+HeapDumpOnOutOfMemoryError 
+   -Dlog.file=/data1/hadoopdata/nodemanager/logdir/application_1545981373722_0172/container_e194_1545981373722_0172_01_000005/taskmanager.log 
+   -Dlogback.configurationFile=file:./logback.xml 
+   -Dlog4j.configuration=file:./log4j.properties org.apache.flink.yarn.YarnTaskManager 
+   --configDir 
+   ```
   #### 2.7 flink的序列化
   Java本身自带的序列化和反序列化的功能，但是辅助信息占用空间比较大，在序列化对象时记录了过多的类信息
   Apache Flink摒弃了Java原生的序列化方法，以独特的方式处理数据类型和序列化，包含自己的类型描述符（TypeInformatio），泛型类型提取和类型序列化框架（TypeSerializer）
@@ -432,7 +453,16 @@ Flink的开发者认为批处理是流处理的一种特殊情况。
   
   
   
-  #### 
-    
+### 3 常见面试题
+#### 3.1 Flink中的Window出现了数据倾斜，你有什么解决办法？
+#### 3.2 Flink中在使用聚合函数 GroupBy、Distinct、KeyBy 等函数时出现数据热点该如何解决？
+#### 3.3 Flink的反压 以及如何处理反压
+#### 3.4 Flink Job的提交流程
+#### 3.5 FLink 三层图结构
+#### 3.6 Master
+#### 3.7 JobManger
+#### 3.8 TaskManger
+#### 3.9 Flink 计算资源的调度是如何实现的？
+#### 3.10 Flink的数据抽象及数据交换过程？
     
   
