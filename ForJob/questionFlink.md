@@ -149,6 +149,14 @@ env.execute()
     time-sliding-window 有重叠数据的时间窗口，设置方式举例：timeWindow(Time.seconds(5), Time.seconds(3))  
     count-tumbling-window无重叠数据的数量窗口，设置方式举例：countWindow(5)   
     count-sliding-window 有重叠数据的数量窗口，设置方式举例：countWindow(5,3) 
+- 自定义window三要素  
+还可以自定义window  dataStream.window(MyDisignWindow)
+- Window Assigner：负责将元素分配到不同的window。
+- Trigger 
+Trigger即触发器，定义何时或什么情况下Fire一个window
+- Evictor（可选） 
+驱逐者，即保留上一window留下的某些元素。     
+[](/srcFlink/windowWatermark.md)
 
 #### (16) time
 - EventTime  EventTime  
@@ -189,7 +197,10 @@ four: eventTime window + watermark 使用watermark表示在这个时间戳之前
 
 - 使用watermark的方式    
 （1）配置AllowedLateness    
-（2）对数据流设置 自定义的TimestampAndWatermark
+（2）对数据流设置 自定义的TimestampAndWatermark     
+两种WaterMark算子实现：    
+- TimestampsAndPeriodicWatermarksOperator   定时产生插入watermark
+- TimestampsAndPunctuatedWatermarksOperator 每条消息一个
 ```
 senv.socketTextStream("localhost", 9999)
                 .assignTimestampsAndWatermarks(new TimestampExtractor)
@@ -518,13 +529,132 @@ window产生数据倾斜指的是数据在不同的窗口内堆积的数据量�
 Flink 内部是基于 producer-consumer 模型来进行消息传递的    
 Flink 使用了高效有界的分布式阻塞队列，就像 Java 通用的阻塞队列（BlockingQueue）一样。下游消费者消费变慢，上游就会受到阻塞。
 ##### C flink 反压和 storm 反压
+- Storm 是通过监控 Bolt 中的接收队列负载情况，如果超过高水位值就会将反压信息写到 Zookeeper ，Zookeeper 上的 watch 会通知该拓扑的所有 Worker 都进入反压状态，最后 Spout 停止发送 tuple。   
+- Flink中的反压使用了高效有界的分布式阻塞队列，下游消费变慢会导致发送端阻塞。
 
 #### 3.4 Flink Job的提交流程
-#### 3.5 FLink 三层图结构
-#### 3.6 Master
+#### 3.5 FLink 三层图结构    
+##### （1) streamGraph jobGraph executionGraph
+- StreamGraph     
+最接近代码所表达的逻辑层面的计算拓扑结构，
+按照用户代码的执行顺序向StreamExecutionEnvironment添加
+StreamTransformation构成流式图。 StramNode
+- JobGraph      
+  从StreamGraph生成，将可以串联合并的节点进行合并，operator chain
+  设置节点之间的边，安排资源共享slot槽位和放置相关联的节点，
+  上传任务所需的文件，设置检查点配置等。
+  相当于经过部分初始化和优化处理的任务图。 JobVectex
+- ExecutionGraph    
+  由JobGraph转换而来，包含了任务具体执行所需的内容，是最贴近底层实现的执行图。 
+##### (2) operator chain
+Flink会尽可能地将operator的subtask链接（chain）在一起形成task。每个task在一个线程中执行    
+operator chain优点
+- 减少减少线程之间的切换
+- 减少消息的序列化/反序列化
+- 减少数据在缓冲区的交换   
+==》减少了延迟的同时提高整体的吞吐量     
+
+operator chain在一起的的条件
+- 上下游的并行度一致 
+- 下游节点的入度为1 （也就是说下游节点没有来自其他节点的输入）
+- 上下游节点都在同一个 slot group 中（下面会解释 slot group）     
+- 用户没有禁用 chain 
+- 下游节点的 chain 策略为 ALWAYS（可以与上下游链接，map、flatmap、filter等默认是ALWAYS） 
+- 上游节点的 chain 策略为 ALWAYS 或 HEAD（只能与下游链接，不能与上游链接，Source默认是HEAD） 
+#### 3.6 Master 
+整个集群的一些协调工作,Flink 中 Master 节点主要包含三大组件：
+- Flink Resource Manager、
+- Flink Dispatcher 
+- Flink Jobmanager 以及为每个运行的 Job 创建一个 JobManager 服务      
+可以任务Master是flink集群的概念， JobMaster/JobManager是单个作业管理者的角色      
+
+集群的 Master 节点的工作范围与 JobManager 的工作范围还是有所不同的，
+- Master 节点的其中一项工作职责就是为每个提交的作业创建一个 JobManager 对象
+- JobManager 任务的分发和取消，处理某个具体作业相关协调工作 task 的调度、Checkpoint 的触发及失败恢复， 心跳检测等
+##### (1) Dispatcher:   
+负责接收用户提供的作业，并且负责为这个新提交的作业拉起一个新的 JobManager 服务；
+##### (2) ResourceManager:  
+负责资源的管理，在整个 Flink 集群中只有一个 ResourceManager，资源相关的内容都由这个服务负责；
+##### (3) JobManager:   
+负责管理具体某个作业的执行，在一个 Flink 集群中可能有多个作业同时执行，每个作业都会有自己的 JobManager 服务
+
+##### (4) 作业提交流程        
+A. client端代码生成stramGraph 优化为jobGraph在这个过程中，
+它会进行一些检查或优化相关的工作
+（比如：检查配置，把可以 Chain 在一起算子 Chain 在一起）。    
+B. 然后，Client 再将生成的 JobGraph 提交到集群中执行。
+此时有两种情况（对于两种不同类型的集群）：
+- 类似于 Standalone 这种 Session 模式（对于 YARN 模式来说），这种情况下 Client 可以直接与 Dispatcher 建立连接并提交作业；
+- 是 Per-Job 模式，这种情况下 Client 首先向资源管理系统 （如 Yarn）申请资源来启动 ApplicationMaster，然后再向 ApplicationMaster 中的 Dispatcher 提交作业。      
+按照本地集群还是yarn集群分 
+- 本地环境下，MiniCluster完成了大部分任务，直接把任务委派给了MiniDispatcher；    
+- 远程环境下，请求发到集群上之后，必然有个handler去处理，在这里是JobSubmitHandler。这个类接手了请求后，委派StandaloneDispatcher启动job，        
+C. Dispatcher 会首先启动一个 JobManager 服务，
+然后 JobManager 会向 ResourceManager 申请资源来启动作业中具体的任务。
+ResourceManager 选择到空闲的 Slot （Flink 架构-基本概念）之后，就会通知相应的 TM 将该 Slot 分配给指定的 JobManager
+
 #### 3.7 JobManger
+##### （1）   负责自己作业相关的协调工作，包括：
+- 向 ResourceManager 申请 Slot 资源来调度相应的 task 任务、
+- 定时触发作业的 checkpoint 和手动 savepoint 的触发、
+- 以及作业的容错恢复
+- taskmanager的心跳信息
+- 任务的请求部署调度和取消等
+
+##### （2） 组件    
+- LegacyScheduler:  
+ExecutionGraph 相关的调度都是在这里实现的，它类似更深层的抽象，
+封装了 ExecutionGraph 和 BackPressureStatsTracker，
+JobMaster 不直接去调用 ExecutionGraph 和 BaaohckPressureStatsTracker 的相关方法，
+都是通过 LegacyScheduler 间接去调用；
+LegacyScheduler包含功能块： Blobwriter checkpointCoordinator 等
+SlotPool:   
+它是 JobMaster 管理其 slot 的服务，
+它负责向 RM 申请/释放 slot 资源，
+并维护其相应的 slot 信息。
+
 #### 3.8 TaskManger
+##### （1） 职责            
+TaskManager 相当于整个集群的 Slave 节点，负责
+- 具体的任务执行和
+- 对应任务在每个节点上的资源申请和管理。
+##### (2) 工作流程      
+TaskManager 从 JobManager 接收需要部署的任务，然后使用 Slot 资源启动 Task，
+建立数据接入的网络连接，接收数据并开始数据处理。
+同时 TaskManager 之间的数据交互都是通过数据流的方式进行的。
+
+##### 与MapReduce区别
+可以看出，Flink 的任务运行其实是采用多线程的方式，    
+这和 MapReduce 多 JVM 进行的方式有很大的区别，     
+Flink 能够极大提高 CPU 使用效率，
+在多个任务和 Task 之间通过 TaskSlot 方式共享系统资源，
+每个 TaskManager 中通过管理多个 TaskSlot 资源池进行对资源进行有效管理
+
+
+
 #### 3.9 Flink 计算资源的调度是如何实现的？
-#### 3.10 Flink的数据抽象及数据交换过程？
+其实就是说Slot       
+TaskManager中最细粒度的资源是Task slot，
+代表了一个固定大小的资源子集，每个TaskManager会将其所占有的资源平分给它的slot。     
+
+每个 TaskManager 有一个slot，也就意味着每个task运行在独立的 JVM 中。每个 TaskManager 有多个slot的话，也就是说多个task运行在同一个JVM中。   
+
+而在同一个JVM进程中的task，
+可以共享TCP连接（基于多路复用）和心跳消息，可以减少数据的网络传输，
+也能共享一些数据结构，一定程度上减少了每个task的消耗
+
+#### 3.10 Flink的数据抽象及数据交换过程？        
+描述
+- 内存抽象 MemorySegement  
+MemorySegment就是Flink的内存抽象   32kb * 2048 64MB        
+- 内存对象 Buffer   
+Flink在数据从operator内的数据对象在向TaskManager上转移，
+预备被发给下个节点的过程中，使用的抽象或者说内存对象是Buffer           
+- 对象的转移的抽象是StreamRecord     
+Java对象转为Buffer的中间对象的中间抽象是StreamRecord     
+
+目的
+- Flink 为了避免JVM的固有缺陷例如java对象存储密度低，
+- FGC影响吞吐和响应等，实现了自主管理内存
     
   
